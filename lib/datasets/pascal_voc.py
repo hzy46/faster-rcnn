@@ -344,4 +344,6 @@ if __name__ == '__main__':
     from datasets.pascal_voc import pascal_voc
     d = pascal_voc('trainval', '2007')
     res = d.roidb
+    print(len(res))
     from IPython import embed; embed()
+    # from IPython import embed; embed()

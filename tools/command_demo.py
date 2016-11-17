@@ -120,12 +120,14 @@ if __name__ == '__main__':
     print '\n\nLoaded network {:s}'.format(args.model)
 
     # Warmup on a dummy image
-    im = 128 * np.ones((300, 300, 3), dtype=np.uint8)
-    for i in xrange(2):
-        _, _= im_detect(sess, net, im)
+    #im = 128 * np.ones((300, 300, 3), dtype=np.uint8)
+    #for i in xrange(2):
+    #    _, _= im_detect(sess, net, im)
 
-    im_names = ['71220.jpg', '71221.jpg', '71222.jpg',
-                '71223.jpg', '71224.jpg']
+    #print("warm up ok")
+
+    im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
+                '001763.jpg', '004545.jpg']
 
 
     for im_name in im_names:
@@ -133,5 +135,5 @@ if __name__ == '__main__':
         print 'Demo for data/demo/{}'.format(im_name)
         demo(sess, net, im_name)
 
-    plt.show()
+    # plt.show()
 

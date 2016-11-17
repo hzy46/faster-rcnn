@@ -2,3 +2,6 @@
 *.so
 *.o
 faster_rcnn_models
+data/
+pretrained/
+train_data/
