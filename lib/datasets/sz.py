@@ -16,6 +16,7 @@ import pdb
 import json
 import logging
 
+
 class sz(imdb):
     def __init__(self, image_set, path=None):
         imdb.__init__(self, 'sz_' + image_set)
@@ -192,18 +193,23 @@ class sz(imdb):
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         print('~~~~~~~~')
+        weighted_ap = 0
+        weighted_n = 0
         for i, cls in enumerate(self._classes):
             if cls == '__background__':
                 continue
             filename = self._get_sz_results_file_template().format(cls)
-            rec, prec, ap = sz_eval(
+            rec, prec, ap, ground_truth_box_num = sz_eval(
                 filename, anno_filename, image_set_file, cls, ovthresh=0.5,
                 use_07_metric=use_07_metric)
             aps += [ap]
-            print('AP for {} = {:.4f}'.format(cls, ap))
+            weighted_n += ground_truth_box_num
+            weighted_ap += ground_truth_box_num * ap
+            print('AP for %s = %f   (%d samples)' % (cls, ap, ground_truth_box_num))
             with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
                 cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
         print('Mean AP = {:.4f}'.format(np.mean(aps)))
+        print('Weighted AP = {:.4f}'.format(float(weighted_ap) / weighted_n))
         print('~~~~~~~~')
         # print('Results:')
         # for ap in aps:

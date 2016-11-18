@@ -190,7 +190,7 @@ def sz_eval(detpath, anno_filename, imagesetfile, classname, ovthresh=0.5, use_0
         prec = -1
         ap = -1
 
-    return rec, prec, ap
+    return rec, prec, ap, npos
 
 def voc_eval(detpath,
              annopath,

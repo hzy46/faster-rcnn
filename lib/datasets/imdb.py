@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -78,7 +78,7 @@ class imdb(object):
 
     @property
     def num_images(self):
-      return len(self.image_index)
+        return len(self.image_index)
 
     def image_path_at(self, i):
         raise NotImplementedError
@@ -98,8 +98,8 @@ class imdb(object):
         raise NotImplementedError
 
     def _get_widths(self):
-      return [PIL.Image.open(self.image_path_at(i)).size[0]
-              for i in xrange(self.num_images)]
+        return [PIL.Image.open(self.image_path_at(i)).size[0]
+                for i in xrange(self.num_images)]
 
     def append_flipped_images(self):
         num_images = self.num_images
@@ -112,10 +112,10 @@ class imdb(object):
             boxes[:, 0] = widths[i] - oldx2
             boxes[:, 2] = widths[i] - oldx1
             assert (boxes[:, 2] >= boxes[:, 0]).all()
-            entry = {'boxes' : boxes,
-                     'gt_overlaps' : self.roidb[i]['gt_overlaps'],
-                     'gt_classes' : self.roidb[i]['gt_classes'],
-                     'flipped' : True}
+            entry = {'boxes': boxes,
+                     'gt_overlaps': self.roidb[i]['gt_overlaps'],
+                     'gt_classes': self.roidb[i]['gt_classes'],
+                     'flipped': True}
             self.roidb.append(entry)
         self._image_index = self._image_index * 2
 
@@ -132,17 +132,17 @@ class imdb(object):
         """
         # Record max overlap value for each gt box
         # Return vector of overlap values
-        areas = { 'all': 0, 'small': 1, 'medium': 2, 'large': 3,
-                  '96-128': 4, '128-256': 5, '256-512': 6, '512-inf': 7}
-        area_ranges = [ [0**2, 1e5**2],    # all
-                        [0**2, 32**2],     # small
-                        [32**2, 96**2],    # medium
-                        [96**2, 1e5**2],   # large
-                        [96**2, 128**2],   # 96-128
-                        [128**2, 256**2],  # 128-256
-                        [256**2, 512**2],  # 256-512
-                        [512**2, 1e5**2],  # 512-inf
-                      ]
+        areas = {'all': 0, 'small': 1, 'medium': 2, 'large': 3,
+                 '96-128': 4, '128-256': 5, '256-512': 6, '512-inf': 7}
+        area_ranges = [[0**2, 1e5**2],    # all
+                       [0**2, 32**2],     # small
+                       [32**2, 96**2],    # medium
+                       [96**2, 1e5**2],   # large
+                       [96**2, 128**2],   # 96-128
+                       [128**2, 256**2],  # 128-256
+                       [256**2, 512**2],  # 256-512
+                       [512**2, 1e5**2],  # 512-inf
+                       ]
         assert areas.has_key(area), 'unknown area range: {}'.format(area)
         area_range = area_ranges[areas[area]]
         gt_overlaps = np.zeros(0)
@@ -211,7 +211,7 @@ class imdb(object):
 
     def create_roidb_from_box_list(self, box_list, gt_roidb):
         assert len(box_list) == self.num_images, \
-                'Number of boxes must match number of ground-truth images'
+            'Number of boxes must match number of ground-truth images'
         roidb = []
         for i in xrange(self.num_images):
             boxes = box_list[i]
@@ -230,11 +230,11 @@ class imdb(object):
 
             overlaps = scipy.sparse.csr_matrix(overlaps)
             roidb.append({
-                'boxes' : boxes,
-                'gt_classes' : np.zeros((num_boxes,), dtype=np.int32),
-                'gt_overlaps' : overlaps,
-                'flipped' : False,
-                'seg_areas' : np.zeros((num_boxes,), dtype=np.float32),
+                'boxes': boxes,
+                'gt_classes': np.zeros((num_boxes,), dtype=np.int32),
+                'gt_overlaps': overlaps,
+                'flipped': False,
+                'seg_areas': np.zeros((num_boxes,), dtype=np.float32),
             })
         return roidb
 
