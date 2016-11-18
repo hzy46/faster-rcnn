@@ -121,9 +121,11 @@ class SolverWrapper(object):
         loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
 
         # optimizer
-        lr = tf.Variable(cfg.TRAIN.LEARNING_RATE, trainable=False)
+        global_step = tf.Variable(0, trainable=False)
+        lr = tf.train.exponential_decay(cfg.TRAIN.LEARNING_RATE, global_step,
+                                        cfg.TRAIN.STEPSIZE, cfg.TRAIN.LR_DECAY_RATE, staircase=True)
         momentum = cfg.TRAIN.MOMENTUM
-        train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(loss)
+        train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(loss, global_step=global_step)
 
         # iintialize variables
         sess.run(tf.initialize_all_variables())
@@ -135,11 +137,7 @@ class SolverWrapper(object):
         last_snapshot_iter = -1
         timer = Timer()
         for iter in range(max_iters):
-            # learning rate
-            if iter >= cfg.TRAIN.STEPSIZE:
-                sess.run(tf.assign(lr, cfg.TRAIN.LEARNING_RATE * cfg.TRAIN.GAMMA))
-            else:
-                sess.run(tf.assign(lr, cfg.TRAIN.LEARNING_RATE))
+            timer.tic()
 
             # get one batch
             blobs = data_layer.forward()
@@ -147,7 +145,6 @@ class SolverWrapper(object):
             # Make one SGD update
             feed_dict = {self.net.data: blobs['data'], self.net.im_info: blobs['im_info'], self.net.keep_prob: 0.5,
                          self.net.gt_boxes: blobs['gt_boxes']}
-            timer.tic()
 
             rpn_loss_cls_value, rpn_loss_box_value, loss_cls_value, loss_box_value, _ = sess.run([rpn_cross_entropy, rpn_loss_box, cross_entropy, loss_box, train_op], feed_dict=feed_dict)
 
