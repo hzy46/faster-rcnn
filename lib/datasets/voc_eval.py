@@ -9,6 +9,8 @@ import os
 import cPickle
 import numpy as np
 import pdb
+import logging
+
 def parse_rec(filename):
     """ Parse a PASCAL VOC xml file """
     tree = ET.parse(filename)
@@ -94,6 +96,11 @@ def voc_eval(detpath,
     # cachedir caches the annotations in a pickle file
 
     # first load gt
+    logging.info('####################Now VOC evaluation####################')
+    logging.info('####################detpath: %s####################' % detpath)
+    logging.info('####################annopath: %s####################' % annopath)
+    logging.info('####################imagesetfile: %s####################' % imagesetfile)
+    logging.info('####################classname: %s####################' % classname)
     if not os.path.isdir(cachedir):
         os.mkdir(cachedir)
     cachefile = os.path.join(cachedir, 'annots.pkl')

@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument('--network', dest='network_name',
                         help='name of the network',
                         default=None, type=str)
+    parser.add_argument('--vis', type=bool, default=False)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -77,7 +78,14 @@ if __name__ == '__main__':
     device_name = '/gpu:{:d}'.format(args.gpu_id)
     print device_name
 
-    network = get_network(args.network_name)
+    if args.imdb_name.startswith('sz'):
+        n_classes = 5
+    elif args.imdb_name.startswith('voc'):
+        n_classes = 21
+    else:
+        raise Exception('Give me the correct n_classes of %s' %(args.imdb_name))
+
+    network = get_network(args.network_name, n_classes)
     print 'Use network `{:s}` in training'.format(args.network_name)
 
     cfg.GPU_ID = args.gpu_id
@@ -88,4 +96,4 @@ if __name__ == '__main__':
     saver.restore(sess, args.model)
     print ('Loading model weights from {:s}').format(args.model)
 
-    test_net(sess, network, imdb, weights_filename)
+    test_net(sess, network, imdb, weights_filename, vis=args.vis)

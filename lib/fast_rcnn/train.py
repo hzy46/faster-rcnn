@@ -57,7 +57,10 @@ class SolverWrapper(object):
 
             # scale and shift with bbox reg unnormalization; then save snapshot
             weights_shape = weights.get_shape().as_list()
-            sess.run(weights.assign(orig_0 * np.tile(self.bbox_stds, (weights_shape[0],1))))
+            print orig_0.shape
+            print weights_shape
+            print np.tile(self.bbox_stds, (weights_shape[0], 1)).shape
+            sess.run(weights.assign(orig_0 * np.tile(self.bbox_stds, (weights_shape[0], 1))))
             sess.run(biases.assign(orig_1 * self.bbox_stds + self.bbox_means))
 
         if not os.path.exists(self.output_dir):
@@ -66,7 +69,7 @@ class SolverWrapper(object):
         infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
                  if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
         filename = (cfg.TRAIN.SNAPSHOT_PREFIX + infix +
-                    '_iter_{:d}'.format(iter+1) + '.ckpt')
+                    '_iter_{:d}'.format(iter + 1) + '.ckpt')
         filename = os.path.join(self.output_dir, filename)
 
         self.saver.save(sess, filename)
@@ -77,47 +80,43 @@ class SolverWrapper(object):
             sess.run(weights.assign(orig_0))
             sess.run(biases.assign(orig_1))
 
-
     def train_model(self, sess, max_iters):
         """Network training loop."""
 
         data_layer = get_data_layer(self.roidb, self.imdb.num_classes)
-   
+
         # RPN
         # classification loss
-        rpn_cls_score = tf.reshape(self.net.get_output('rpn_cls_score_reshape'),[-1,2])
-        rpn_label = tf.reshape(self.net.get_output('rpn-data')[0],[-1])
+        rpn_cls_score = tf.reshape(self.net.get_output('rpn_cls_score_reshape'), [-1, 2])
+        rpn_label = tf.reshape(self.net.get_output('rpn-data')[0], [-1])
         # ignore_label(-1)
-        rpn_cls_score = tf.reshape(tf.gather(rpn_cls_score,tf.where(tf.not_equal(rpn_label,-1))),[-1,2])
-        rpn_label = tf.reshape(tf.gather(rpn_label,tf.where(tf.not_equal(rpn_label,-1))),[-1])
+        rpn_cls_score = tf.reshape(tf.gather(rpn_cls_score, tf.where(tf.not_equal(rpn_label, -1))), [-1, 2])
+        rpn_label = tf.reshape(tf.gather(rpn_label, tf.where(tf.not_equal(rpn_label, -1))), [-1])
         rpn_cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(rpn_cls_score, rpn_label))
-
 
         # bounding box regression L1 loss
         rpn_bbox_pred = self.net.get_output('rpn_bbox_pred')
-        rpn_bbox_targets = tf.transpose(self.net.get_output('rpn-data')[1],[0,2,3,1])
-        rpn_bbox_inside_weights = tf.transpose(self.net.get_output('rpn-data')[2],[0,2,3,1])
-        rpn_bbox_outside_weights = tf.transpose(self.net.get_output('rpn-data')[3],[0,2,3,1])
-        smoothL1_sign = tf.cast(tf.less(tf.abs(tf.sub(rpn_bbox_pred, rpn_bbox_targets)),1),tf.float32)
-        rpn_loss_box = tf.mul(tf.reduce_mean(tf.reduce_sum(tf.mul(rpn_bbox_outside_weights,tf.add(
-                       tf.mul(tf.mul(tf.pow(tf.mul(rpn_bbox_inside_weights, tf.sub(rpn_bbox_pred, rpn_bbox_targets))*3,2),0.5),smoothL1_sign),
-                       tf.mul(tf.sub(tf.abs(tf.sub(rpn_bbox_pred, rpn_bbox_targets)),0.5/9.0),tf.abs(smoothL1_sign-1)))), reduction_indices=[1,2])),10)
- 
+        rpn_bbox_targets = tf.transpose(self.net.get_output('rpn-data')[1], [0, 2, 3, 1])
+        rpn_bbox_inside_weights = tf.transpose(self.net.get_output('rpn-data')[2], [0, 2, 3, 1])
+        rpn_bbox_outside_weights = tf.transpose(self.net.get_output('rpn-data')[3], [0, 2, 3, 1])
+        smoothL1_sign = tf.cast(tf.less(tf.abs(tf.sub(rpn_bbox_pred, rpn_bbox_targets)), 1), tf.float32)
+        rpn_loss_box = tf.mul(tf.reduce_mean(tf.reduce_sum(tf.mul(rpn_bbox_outside_weights, tf.add(
+            tf.mul(tf.mul(tf.pow(tf.mul(rpn_bbox_inside_weights, tf.sub(rpn_bbox_pred, rpn_bbox_targets)) * 3, 2), 0.5), smoothL1_sign),
+            tf.mul(tf.sub(tf.abs(tf.sub(rpn_bbox_pred, rpn_bbox_targets)), 0.5 / 9.0), tf.abs(smoothL1_sign - 1)))), reduction_indices=[1, 2])), 10)
+
         # R-CNN
         # classification loss
         cls_score = self.net.get_output('cls_score')
-        #label = tf.placeholder(tf.int32, shape=[None])
-        label = tf.reshape(self.net.get_output('roi-data')[1],[-1])
+        # label = tf.placeholder(tf.int32, shape=[None])
+        label = tf.reshape(self.net.get_output('roi-data')[1], [-1])
         cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(cls_score, label))
-
 
         # bounding box regression L1 loss
         bbox_pred = self.net.get_output('bbox_pred')
         bbox_targets = self.net.get_output('roi-data')[2]
         bbox_inside_weights = self.net.get_output('roi-data')[3]
         bbox_outside_weights = self.net.get_output('roi-data')[4]
-        loss_box = tf.reduce_mean(tf.reduce_sum(tf.mul(bbox_outside_weights,tf.mul(bbox_inside_weights, tf.abs(tf.sub(bbox_pred, bbox_targets)))), reduction_indices=[1]))
-
+        loss_box = tf.reduce_mean(tf.reduce_sum(tf.mul(bbox_outside_weights, tf.mul(bbox_inside_weights, tf.abs(tf.sub(bbox_pred, bbox_targets)))), reduction_indices=[1]))
 
         loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
 
@@ -146,25 +145,26 @@ class SolverWrapper(object):
             blobs = data_layer.forward()
 
             # Make one SGD update
-            feed_dict={self.net.data: blobs['data'], self.net.im_info: blobs['im_info'], self.net.keep_prob: 0.5, \
-                           self.net.gt_boxes: blobs['gt_boxes']}
+            feed_dict = {self.net.data: blobs['data'], self.net.im_info: blobs['im_info'], self.net.keep_prob: 0.5,
+                         self.net.gt_boxes: blobs['gt_boxes']}
             timer.tic()
 
-            rpn_loss_cls_value, rpn_loss_box_value,loss_cls_value, loss_box_value, _ = sess.run([rpn_cross_entropy, rpn_loss_box, cross_entropy, loss_box, train_op], feed_dict=feed_dict)
+            rpn_loss_cls_value, rpn_loss_box_value, loss_cls_value, loss_box_value, _ = sess.run([rpn_cross_entropy, rpn_loss_box, cross_entropy, loss_box, train_op], feed_dict=feed_dict)
 
             timer.toc()
 
-            if (iter+1) % (cfg.TRAIN.DISPLAY) == 0:
-                print 'iter: %d / %d,total loss: %.4f, rpn_loss_cls: %.4f, rpn_loss_box: %.4f, loss_cls: %.4f, loss_box: %.4f, lr: %f'%\
-                        (iter+1, max_iters, rpn_loss_cls_value + rpn_loss_box_value + loss_cls_value + loss_box_value ,rpn_loss_cls_value, rpn_loss_box_value,loss_cls_value, loss_box_value, lr.eval())
+            if (iter + 1) % (cfg.TRAIN.DISPLAY) == 0:
+                print 'iter: %d / %d,total loss: %.4f, rpn_loss_cls: %.4f, rpn_loss_box: %.4f, loss_cls: %.4f, loss_box: %.4f, lr: %f' %\
+                    (iter + 1, max_iters, rpn_loss_cls_value + rpn_loss_box_value + loss_cls_value + loss_box_value, rpn_loss_cls_value, rpn_loss_box_value, loss_cls_value, loss_box_value, lr.eval())
                 print 'speed: {:.3f}s / iter'.format(timer.average_time)
 
-            if (iter+1) % cfg.TRAIN.SNAPSHOT_ITERS == 0:
+            if (iter + 1) % cfg.TRAIN.SNAPSHOT_ITERS == 0:
                 last_snapshot_iter = iter
                 self.snapshot(sess, iter)
 
         if last_snapshot_iter != iter:
             self.snapshot(sess, iter)
+
 
 def get_training_roidb(imdb):
     """Returns a roidb (Region of Interest database) for use in training."""

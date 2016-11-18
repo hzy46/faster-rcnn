@@ -5,3 +5,5 @@ faster_rcnn_models
 data/
 pretrained/
 train_data/
+output/
+experiments/logs/

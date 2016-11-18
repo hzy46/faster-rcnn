@@ -27,7 +27,7 @@ case $DATASET in
     TRAIN_IMDB="voc_2007_trainval"
     TEST_IMDB="voc_2007_test"
     PT_DIR="pascal_voc"
-    ITERS=70000
+    ITERS=10
     ;;
   coco)
     # This is a very long and slow training schedule
@@ -37,6 +37,11 @@ case $DATASET in
     TEST_IMDB="coco_2014_minival"
     PT_DIR="coco"
     ITERS=490000
+    ;;
+  sz)
+    TRAIN_IMDB="sz_train"
+    TEST_IMDB="sz_val"
+    ITERS=10000
     ;;
   *)
     echo "No dataset given"

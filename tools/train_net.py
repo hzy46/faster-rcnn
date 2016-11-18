@@ -19,6 +19,7 @@ import pprint
 import numpy as np
 import sys
 import pdb
+import logging
 
 def parse_args():
     """
@@ -53,6 +54,7 @@ def parse_args():
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
 
+
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -62,7 +64,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-
+    logging.basicConfig(level=logging.INFO)
     print('Called with args:')
     print(args)
 
@@ -77,6 +79,7 @@ if __name__ == '__main__':
     if not args.randomize:
         # fix the random seeds (numpy and caffe) for reproducibility
         np.random.seed(cfg.RNG_SEED)
+    logging.info('-----------------------------------%s----------------------' % args.imdb_name)
     imdb = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb.name)
     roidb = get_training_roidb(imdb)
@@ -87,7 +90,16 @@ if __name__ == '__main__':
     device_name = '/gpu:{:d}'.format(args.gpu_id)
     print device_name
 
-    network = get_network(args.network_name)
+    if args.imdb_name.startswith('sz'):
+        n_classes = 5
+    elif args.imdb_name.startswith('voc'):
+        n_classes = 21
+    else:
+        raise Exception('Give me the correct n_classes of %s' %(args.imdb_name))
+
+
+    logging.info('----------------Use %d classes-----------------' % n_classes)
+    network = get_network(args.network_name, n_classes)
     print 'Use network `{:s}` in training'.format(args.network_name)
 
     train_net(network, imdb, roidb, output_dir,

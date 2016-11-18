@@ -14,6 +14,8 @@ import datasets.imagenet3d
 import datasets.kitti
 import datasets.kitti_tracking
 import numpy as np
+from  datasets.sz import sz
+
 
 def _selective_search_IJCV_top_k(split, year, top_k):
     """Return an imdb that uses the top k proposals from the selective search
@@ -29,7 +31,7 @@ for year in ['2007', '2012']:
     for split in ['train', 'val', 'trainval', 'test']:
         name = 'voc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year:
-                datasets.pascal_voc(split, year))
+                        datasets.pascal_voc(split, year))
 """
 # Set up voc_<year>_<split>_top_<k> using selective search "quality" mode
 # but only returning the first k boxes
@@ -47,14 +49,14 @@ for year in ['2007']:
         name = 'voc_{}_{}'.format(year, split)
         print name
         __sets[name] = (lambda split=split, year=year:
-                datasets.pascal_voc(split, year))
+                        datasets.pascal_voc(split, year))
 
 # KITTI dataset
 for split in ['train', 'val', 'trainval', 'test']:
     name = 'kitti_{}'.format(split)
     print name
     __sets[name] = (lambda split=split:
-            datasets.kitti(split))
+                    datasets.kitti(split))
 
 # Set up coco_2014_<split>
 for year in ['2014']:
@@ -73,7 +75,13 @@ for split in ['71', '370']:
     name = 'nthu_{}'.format(split)
     print name
     __sets[name] = (lambda split=split:
-            datasets.nthu(split))
+                    datasets.nthu(split))
+
+# shen zhou
+for split in ['train', 'val', 'test']:
+    name = 'sz_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    sz(split))
 
 
 def get_imdb(name):
@@ -81,6 +89,7 @@ def get_imdb(name):
     if not __sets.has_key(name):
         raise KeyError('Unknown dataset: {}'.format(name))
     return __sets[name]()
+
 
 def list_imdbs():
     """List all registered imdbs."""
