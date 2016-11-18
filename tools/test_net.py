@@ -18,6 +18,7 @@ import argparse
 import pprint
 import time, os, sys
 import tensorflow as tf
+import logging
 
 def parse_args():
     """
@@ -40,8 +41,6 @@ def parse_args():
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to test',
                         default='voc_2007_test', type=str)
-    parser.add_argument('--comp', dest='comp_mode', help='competition mode',
-                        action='store_true')
     parser.add_argument('--network', dest='network_name',
                         help='name of the network',
                         default=None, type=str)
@@ -56,6 +55,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    logging.basicConfig(level=logging.INFO)
 
     print('Called with args:')
     print(args)
@@ -73,7 +73,6 @@ if __name__ == '__main__':
     weights_filename = os.path.splitext(os.path.basename(args.model))[0]
 
     imdb = get_imdb(args.imdb_name)
-    imdb.competition_mode(args.comp_mode)
 
     device_name = '/gpu:{:d}'.format(args.gpu_id)
     print device_name

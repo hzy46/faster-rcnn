@@ -21,6 +21,7 @@ def parse_args():
 def main(args):
     all_pics = glob(os.path.join(args.sz_dir, "training/training/*.jpg"))
     all_index = [os.path.basename(filepath).split('.')[0] for filepath in all_pics]
+    random.shuffle(all_index)
     train_number = int(len(all_index) * args.train_split)
     train_index = all_index[0:train_number]
     val_index = all_index[train_number:len(all_index)]

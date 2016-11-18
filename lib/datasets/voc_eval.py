@@ -1,3 +1,4 @@
+# coding: utf-8
 # --------------------------------------------------------
 # Fast/er R-CNN
 # Licensed under The MIT License [see LICENSE for details]
@@ -10,6 +11,8 @@ import cPickle
 import numpy as np
 import pdb
 import logging
+import json
+
 
 def parse_rec(filename):
     """ Parse a PASCAL VOC xml file """
@@ -29,6 +32,40 @@ def parse_rec(filename):
         objects.append(obj_struct)
 
     return objects
+
+
+def sz_raw_id_to_name(raw_id):
+    if raw_id == 1:
+        return 'vehicle'
+    elif raw_id == 2:
+        return 'pedestrian'
+    elif raw_id == 3:
+        return 'cyclist'
+    elif raw_id == 20:
+        return 'traffic_lights'
+    else:
+        raise Exception('id is not defined!')
+
+
+def get_sz_recs(filename):
+    """ Parse a label.idl file """
+    """return all bbox"""
+    """对应原先的recs"""
+    with open(filename) as f:
+        recs = {}
+        for line in f:
+            j = json.loads(line)
+            key = j.keys()[0]
+            image_index = key.split('.')[0]
+            recs[image_index] = []
+            for box in j[key]:
+                recs[image_index].append({
+                    'difficult': 0,
+                    'bbox': box[0:4],
+                    'name': sz_raw_id_to_name(int(box[4])),
+                })
+    return recs
+
 
 def voc_ap(rec, prec, use_07_metric=False):
     """ ap = voc_ap(rec, prec, [use_07_metric])
@@ -63,6 +100,98 @@ def voc_ap(rec, prec, use_07_metric=False):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
+
+def sz_eval(detpath, anno_filename, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
+    recs = get_sz_recs(anno_filename)
+    with open(imagesetfile, 'r') as f:
+        lines = f.readlines()
+    imagenames = [x.strip() for x in lines]
+
+    """这里开始全是复制"""
+    # extract gt objects for this class
+    class_recs = {}
+    npos = 0
+    for imagename in imagenames:
+        R = [obj for obj in recs[imagename] if obj['name'] == classname]
+        bbox = np.array([x['bbox'] for x in R])
+        difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+        det = [False] * len(R)
+        npos = npos + sum(~difficult)
+        class_recs[imagename] = {'bbox': bbox,
+                                 'difficult': difficult,
+                                 'det': det}
+    # read dets
+    detfile = detpath.format(classname)
+    with open(detfile, 'r') as f:
+        lines = f.readlines()
+    if any(lines) == 1:
+
+        splitlines = [x.strip().split(' ') for x in lines]
+        image_ids = [x[0] for x in splitlines]
+        confidence = np.array([float(x[1]) for x in splitlines])
+        BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
+
+        # sort by confidence
+        sorted_ind = np.argsort(-confidence)
+        sorted_scores = np.sort(-confidence)
+        BB = BB[sorted_ind, :]
+        image_ids = [image_ids[x] for x in sorted_ind]
+
+        # go down dets and mark TPs and FPs
+        nd = len(image_ids)
+        tp = np.zeros(nd)
+        fp = np.zeros(nd)
+        for d in range(nd):
+            R = class_recs[image_ids[d]]
+            bb = BB[d, :].astype(float)
+            ovmax = -np.inf
+            BBGT = R['bbox'].astype(float)
+
+            if BBGT.size > 0:
+                # compute overlaps
+                # intersection
+                ixmin = np.maximum(BBGT[:, 0], bb[0])
+                iymin = np.maximum(BBGT[:, 1], bb[1])
+                ixmax = np.minimum(BBGT[:, 2], bb[2])
+                iymax = np.minimum(BBGT[:, 3], bb[3])
+                iw = np.maximum(ixmax - ixmin + 1., 0.)
+                ih = np.maximum(iymax - iymin + 1., 0.)
+                inters = iw * ih
+
+                # union
+                uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
+                       (BBGT[:, 2] - BBGT[:, 0] + 1.) *
+                       (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+
+                overlaps = inters / uni
+                ovmax = np.max(overlaps)
+                jmax = np.argmax(overlaps)
+
+            if ovmax > ovthresh:
+                if not R['difficult'][jmax]:
+                    if not R['det'][jmax]:
+                        tp[d] = 1.
+                        R['det'][jmax] = 1
+                    else:
+                        fp[d] = 1.
+            else:
+                fp[d] = 1.
+
+        # compute precision recall
+        fp = np.cumsum(fp)
+        tp = np.cumsum(tp)
+        rec = tp / float(npos)
+        # avoid divide by zero in case the first detection matches a difficult
+        # ground truth
+        prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
+        ap = voc_ap(rec, prec, use_07_metric)
+    else:
+        rec = -1
+        prec = -1
+        ap = -1
+
+    return rec, prec, ap
+
 def voc_eval(detpath,
              annopath,
              imagesetfile,
@@ -96,14 +225,15 @@ def voc_eval(detpath,
     # cachedir caches the annotations in a pickle file
 
     # first load gt
-    logging.info('####################Now VOC evaluation####################')
-    logging.info('####################detpath: %s####################' % detpath)
-    logging.info('####################annopath: %s####################' % annopath)
-    logging.info('####################imagesetfile: %s####################' % imagesetfile)
-    logging.info('####################classname: %s####################' % classname)
+    logging.info('#################### Now VOC evaluation')
+    logging.info('#################### detpath: %s' % detpath)
+    logging.info('#################### annopath: %s' % annopath)
+    logging.info('#################### imagesetfile: %s' % imagesetfile)
+    logging.info('#################### classname: %s' % classname)
     if not os.path.isdir(cachedir):
         os.mkdir(cachedir)
     cachefile = os.path.join(cachedir, 'annots.pkl')
+    logging.info('#################### cachefile: %s' % cachefile)
     # read list of images
     with open(imagesetfile, 'r') as f:
         lines = f.readlines()
@@ -205,8 +335,8 @@ def voc_eval(detpath,
         prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
         ap = voc_ap(rec, prec, use_07_metric)
     else:
-         rec = -1
-         prec = -1
-         ap = -1
+        rec = -1
+        prec = -1
+        ap = -1
 
     return rec, prec, ap

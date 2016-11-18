@@ -333,24 +333,26 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=300, thresh=0.05, 
                       _t['misc'].average_time)
 
     """写我自己的输出"""
-    my_result_file = os.path.join(output_dir, 'sz_result.json')
-    result_json = {}
-    with open(my_result_file, 'w') as f:
-        for cls, all_pic_result in enumerate(all_boxes):
-            for image_index_id, result_n in enumerate(all_pic_result):
-                for result in result_n:
-                    if cls == 0:
-                        break
-                    real_cls = cls
-                    if cls == 4:
-                        """针对比赛这里的class要转换"""
-                        real_cls = 20
-                    result_key = str(imdb._image_index[image_index_id]) + '.jpg'
-                    if result_key not in result_json:
-                        result_json[result_key] = []
-                    result_json[result_key].append([float(result[0]), float(result[1]), float(result[2]), float(result[3]), real_cls, float(result[4])])
-        f.write(json.dumps(result_json))
-    print('Result has been written into: %s' % my_result_file)
+    if imdb.name.startswith('sz'):
+        my_result_file = os.path.join(output_dir, 'sz_result.json')
+        result_json = {}
+        with open(my_result_file, 'w') as f:
+            for cls, all_pic_result in enumerate(all_boxes):
+                for image_index_id, result_n in enumerate(all_pic_result):
+                    for result in result_n:
+                        if cls == 0:
+                            break
+                        real_cls = cls
+                        if cls == 4:
+                            """针对比赛这里的class要转换"""
+                            real_cls = 20
+                        result_key = str(imdb._image_index[image_index_id]) + '.jpg'
+                        if result_key not in result_json:
+                            result_json[result_key] = []
+                        result_json[result_key].append([float(result[0]), float(result[1]), float(result[2]), float(result[3]), real_cls, float(result[4])])
+            f.write(json.dumps(result_json))
+        print('Result has been written into: %s' % my_result_file)
+
     det_file = os.path.join(output_dir, 'detections.pkl')
     with open(det_file, 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)

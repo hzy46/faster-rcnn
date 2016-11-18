@@ -10,11 +10,11 @@ import utils.cython_bbox
 import cPickle
 import subprocess
 import uuid
-from voc_eval import voc_eval
+from voc_eval import sz_eval
 from fast_rcnn.config import cfg
 import pdb
 import json
-
+import logging
 
 class sz(imdb):
     def __init__(self, image_set, path=None):
@@ -32,6 +32,16 @@ class sz(imdb):
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self._roidb_handler = self.gt_roidb
+
+        self._salt = str(uuid.uuid4())
+        """
+        cleanup：是否清除result文件
+        use_salt: 是否给result文件加salt 
+        """
+        self.config = {'cleanup': True,
+                       'use_salt': True,
+                       'use_07_metric': False
+                       }
 
     def _get_default_path(self):
         """
@@ -126,6 +136,80 @@ class sz(imdb):
         assert os.path.exists(image_path), \
             'Path does not exist: {}'.format(image_path)
         return image_path
+
+    def _get_sz_results_file_template(self):
+        # filename of result
+        if self.config['use_salt']:
+            salt = self._salt
+        else:
+            salt = ''
+        filename = 'sz_result_to_evaluation' + salt + self._image_set + '_{:s}.txt'
+        path = os.path.join(
+            self._path,
+            'results',
+            filename)
+        dirpath = os.path.join(
+            self._path,
+            'results')
+        if os.path.exists(dirpath) is False:
+            os.makedirs(dirpath)
+        return path
+
+    def _write_sz_results_file(self, all_boxes):
+        for cls_ind, cls in enumerate(self.classes):
+            if cls == '__background__':
+                continue
+            print 'Writing {} sz results file'.format(cls)
+            filename = self._get_sz_results_file_template().format(cls)
+            with open(filename, 'wt') as f:
+                for im_ind, index in enumerate(self.image_index):
+                    dets = all_boxes[cls_ind][im_ind]
+                    if dets == []:
+                        continue
+                    for k in xrange(dets.shape[0]):
+                        f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
+                                format(index, dets[k, -1],
+                                       dets[k, 0] + 1, dets[k, 1] + 1,
+                                       dets[k, 2] + 1, dets[k, 3] + 1))
+
+    def evaluate_detections(self, all_boxes, output_dir):
+        self._write_sz_results_file(all_boxes)
+        self._do_python_eval(output_dir)
+        if self.config['cleanup']:
+            logging.info('cleanup the result file........')
+            for cls in self._classes:
+                if cls == '__background__':
+                    continue
+                filename = self._get_sz_results_file_template().format(cls)
+                os.remove(filename)
+
+    def _do_python_eval(self, output_dir='output'):
+        anno_filename = self._label_file
+        image_set_file = os.path.join(self._path, self._image_set + '.txt')
+        aps = []
+        use_07_metric = self.config['use_07_metric']
+        print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        print('~~~~~~~~')
+        for i, cls in enumerate(self._classes):
+            if cls == '__background__':
+                continue
+            filename = self._get_sz_results_file_template().format(cls)
+            rec, prec, ap = sz_eval(
+                filename, anno_filename, image_set_file, cls, ovthresh=0.5,
+                use_07_metric=use_07_metric)
+            aps += [ap]
+            print('AP for {} = {:.4f}'.format(cls, ap))
+            with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
+                cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+        print('Mean AP = {:.4f}'.format(np.mean(aps)))
+        print('~~~~~~~~')
+        # print('Results:')
+        # for ap in aps:
+        #     print('{:.3f}'.format(ap))
+        # print('{:.3f}'.format(np.mean(aps)))
+
 
 if __name__ == '__main__':
     from datasets.sz import sz
