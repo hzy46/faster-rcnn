@@ -41,7 +41,7 @@ case $DATASET in
   sz)
     TRAIN_IMDB="sz_train"
     TEST_IMDB="sz_val"
-    ITERS=50000
+    ITERS=70000
     ;;
   *)
     echo "No dataset given"
