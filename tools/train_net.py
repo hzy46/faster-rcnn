@@ -38,6 +38,9 @@ def parse_args():
     parser.add_argument('--weights', dest='pretrained_model',
                         help='initialize with pretrained model weights',
                         default=None, type=str)
+    parser.add_argument('--checkpoint', dest='checkpoint',
+                        help='tensorflow',
+                        default=None, type=str)
     parser.add_argument('--cfg', dest='cfg_file',
                         help='optional config file',
                         default=None, type=str)
@@ -104,4 +107,4 @@ if __name__ == '__main__':
 
     train_net(network, imdb, roidb, output_dir,
               pretrained_model=args.pretrained_model,
-              max_iters=args.max_iters)
+              max_iters=args.max_iters, checkpoint=args.checkpoint)

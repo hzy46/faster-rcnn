@@ -1,3 +1,4 @@
+#coding:utf8
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -16,7 +17,7 @@ import numpy as np
 import os
 import tensorflow as tf
 import sys
-
+import logging
 
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
@@ -24,45 +25,31 @@ class SolverWrapper(object):
     use to unnormalize the learned bounding-box regression weights.
     """
 
-    def __init__(self, sess, network, imdb, roidb, output_dir, pretrained_model=None):
+    def __init__(self, sess, network, imdb, roidb, output_dir, pretrained_model=None, checkpoint=None):
         """Initialize the SolverWrapper."""
         self.net = network
         self.imdb = imdb
         self.roidb = roidb
         self.output_dir = output_dir
         self.pretrained_model = pretrained_model
-
-        print 'Computing bounding-box regression targets...'
+        self.checkpoint = checkpoint
+        if self.pretrained_model is not None and self.checkpoint is not None:
+            raise Exception('Please do not give pretrained_model and checkpoint together!')
         if cfg.TRAIN.BBOX_REG:
             self.bbox_means, self.bbox_stds = rdl_roidb.add_bbox_regression_targets(roidb)
-        print 'done'
-
+        """保存这个信息是给预测用的。原先的机制是unnormalize然后保存的。原先的机制会导致无法方便地使用checkpoint进行训练。"""
+        with tf.variable_scope('custom', reuse=False):
+            bbox_means = tf.get_variable("bbox_means", self.bbox_means.shape, trainable=False)
+            bbox_stds = tf.get_variable("bbox_stds", self.bbox_stds.shape, trainable=False)
+        self.global_step = tf.Variable(0, trainable=False)
         # For checkpoint
         self.saver = tf.train.Saver(max_to_keep=100)
+
 
     def snapshot(self, sess, iter):
         """Take a snapshot of the network after unnormalizing the learned
         bounding-box regression weights. This enables easy use at test-time.
         """
-        net = self.net
-
-        if cfg.TRAIN.BBOX_REG and net.layers.has_key('bbox_pred'):
-            # save original values
-            with tf.variable_scope('bbox_pred', reuse=True):
-                weights = tf.get_variable("weights")
-                biases = tf.get_variable("biases")
-
-            orig_0 = weights.eval()
-            orig_1 = biases.eval()
-
-            # scale and shift with bbox reg unnormalization; then save snapshot
-            weights_shape = weights.get_shape().as_list()
-            print orig_0.shape
-            print weights_shape
-            print np.tile(self.bbox_stds, (weights_shape[0], 1)).shape
-            sess.run(weights.assign(orig_0 * np.tile(self.bbox_stds, (weights_shape[0], 1))))
-            sess.run(biases.assign(orig_1 * self.bbox_stds + self.bbox_means))
-
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -75,10 +62,6 @@ class SolverWrapper(object):
         self.saver.save(sess, filename)
         print 'Wrote snapshot to: {:s}'.format(filename)
 
-        if cfg.TRAIN.BBOX_REG and net.layers.has_key('bbox_pred'):
-            # restore net to original state
-            sess.run(weights.assign(orig_0))
-            sess.run(biases.assign(orig_1))
 
     def train_model(self, sess, max_iters):
         """Network training loop."""
@@ -121,24 +104,34 @@ class SolverWrapper(object):
         loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
 
         # optimizer
-        global_step = tf.Variable(0, trainable=False)
-        lr = tf.train.exponential_decay(cfg.TRAIN.LEARNING_RATE, global_step,
+        lr = tf.train.exponential_decay(cfg.TRAIN.LEARNING_RATE, self.global_step,
                                         cfg.TRAIN.STEPSIZE, cfg.TRAIN.LR_DECAY_RATE, staircase=True)
         momentum = cfg.TRAIN.MOMENTUM
-        train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(loss, global_step=global_step)
+        train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(loss, global_step=self.global_step)
 
         # iintialize variables
         sess.run(tf.initialize_all_variables())
+
+        """在这里赋值，如果在构造函数内赋值，会被这个变量初始化覆盖"""
+        with tf.variable_scope('custom', reuse=True):
+            bbox_means = tf.get_variable("bbox_means")
+            bbox_stds = tf.get_variable("bbox_stds")
+            sess.run(bbox_means.assign(self.bbox_means))
+            sess.run(bbox_stds.assign(self.bbox_stds))
+
         if self.pretrained_model is not None:
             print ('Loading pretrained model '
                    'weights from {:s}').format(self.pretrained_model)
             self.net.load(self.pretrained_model, sess, True)
+        elif self.checkpoint is not None:
+            print('Loading checkpoint from: ' + self.checkpoint)
+            self.saver.restore(sess, self.checkpoint)
 
+        start_global_step = int(sess.run(self.global_step))
         last_snapshot_iter = -1
         timer = Timer()
-        for iter in range(max_iters):
+        for iter in range(start_global_step, max_iters):
             timer.tic()
-
             # get one batch
             blobs = data_layer.forward()
 
@@ -196,11 +189,11 @@ def get_data_layer(roidb, num_classes):
     return layer
 
 
-def train_net(network, imdb, roidb, output_dir, pretrained_model=None, max_iters=40000):
+def train_net(network, imdb, roidb, output_dir, pretrained_model=None, max_iters=40000, checkpoint=None):
     """Train a Fast R-CNN network."""
 
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-        sw = SolverWrapper(sess, network, imdb, roidb, output_dir, pretrained_model=pretrained_model)
+        sw = SolverWrapper(sess, network, imdb, roidb, output_dir, pretrained_model=pretrained_model, checkpoint=checkpoint)
         print 'Solving...'
         sw.train_model(sess, max_iters)
         print 'done solving'

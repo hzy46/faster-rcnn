@@ -1,3 +1,4 @@
+#coding: utf-8
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -21,6 +22,7 @@ import os.path as osp
 import numpy as np
 # `pip install easydict` if you don't have it
 from easydict import EasyDict as edict
+import logging
 
 __C = edict()
 # Consumers can get config by:
@@ -89,7 +91,6 @@ __C.TRAIN.BBOX_REG = True
 # Overlap required between a ROI and ground-truth box in order for that ROI to
 # be used as a bounding-box regression training example
 __C.TRAIN.BBOX_THRESH = 0.5
-
 # Iterations between snapshots
 __C.TRAIN.SNAPSHOT_ITERS = 5000
 
@@ -113,6 +114,7 @@ __C.TRAIN.BBOX_NORMALIZE_MEANS = (0.0, 0.0, 0.0, 0.0)
 __C.TRAIN.BBOX_NORMALIZE_STDS = (0.1, 0.1, 0.2, 0.2)
 
 # Train using these proposals
+"""这是一个无用选项"""
 __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
 
 # Make minibatches from images that have similar aspect ratios (i.e. both
@@ -120,6 +122,7 @@ __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
 # on zero-padding.
 __C.TRAIN.ASPECT_GROUPING = True
 
+"""这里的选项不一定是最后的选项，读入的yml文件是会覆盖这里的选项的！"""
 # Use RPN to detect objects
 __C.TRAIN.HAS_RPN = False
 # IOU >= thresh: positive example
@@ -285,6 +288,7 @@ def cfg_from_file(filename):
     import yaml
     with open(filename, 'r') as f:
         yaml_cfg = edict(yaml.load(f))
+        logging.warning('Will override these configs because of the config file: ' + str(yaml_cfg))
 
     _merge_a_into_b(yaml_cfg, __C)
 

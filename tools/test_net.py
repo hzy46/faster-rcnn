@@ -16,9 +16,12 @@ from datasets.factory import get_imdb
 from networks.factory import get_network
 import argparse
 import pprint
-import time, os, sys
+import time
+import os
+import sys
 import tensorflow as tf
 import logging
+
 
 def parse_args():
     """
@@ -82,14 +85,17 @@ if __name__ == '__main__':
     elif args.imdb_name.startswith('voc'):
         n_classes = 21
     else:
-        raise Exception('Give me the correct n_classes of %s' %(args.imdb_name))
+        raise Exception('Give me the correct n_classes of %s' % (args.imdb_name))
 
     network = get_network(args.network_name, n_classes)
     print 'Use network `{:s}` in training'.format(args.network_name)
 
     cfg.GPU_ID = args.gpu_id
 
-    # start a session
+    with tf.variable_scope('custom', reuse=False):
+        bbox_means = tf.get_variable("bbox_means", shape=(n_classes * 4, ), trainable=False)
+        bbox_stds = tf.get_variable("bbox_stds", shape=(n_classes * 4, ), trainable=False)
+
     saver = tf.train.Saver()
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
     saver.restore(sess, args.model)

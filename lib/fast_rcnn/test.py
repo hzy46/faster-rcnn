@@ -16,6 +16,8 @@ import tensorflow as tf
 from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
 import matplotlib.pyplot as plt
 import json
+import roi_data_layer.roidb as rdl_roidb
+import logging
 
 
 def _get_image_blob(im):
@@ -258,9 +260,35 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
+def unnormalize(sess, net):
+    if cfg.TRAIN.BBOX_REG and 'bbox_pred' in net.layers:
+        logging.warning('Apply unnormalization to bbox_pred.')
+        with tf.variable_scope('bbox_pred', reuse=True):
+            weights = tf.get_variable("weights")
+            biases = tf.get_variable("biases")
+
+        with tf.variable_scope('custom', reuse=True):
+            bbox_means = tf.get_variable("bbox_means")
+            bbox_stds = tf.get_variable("bbox_stds")
+
+        with sess.as_default():
+            orig_0 = weights.eval()
+            orig_1 = biases.eval()
+            bbox_means = bbox_means.eval()
+            bbox_stds = bbox_stds.eval()
+
+        print(bbox_means)
+        print(bbox_stds)
+
+        weights_shape = weights.get_shape().as_list()
+        sess.run(weights.assign(orig_0 * np.tile(bbox_stds, (weights_shape[0], 1))))
+        sess.run(biases.assign(orig_1 * bbox_stds + bbox_means))
+
 
 def test_net(sess, net, imdb, weights_filename, max_per_image=300, thresh=0.05, vis=False):
     """Test a Fast R-CNN network on an image database."""
+    unnormalize(sess, net)
+
     num_images = len(imdb.image_index)
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in

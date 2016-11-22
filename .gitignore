@@ -7,3 +7,4 @@ pretrained/
 train_data/
 output/
 experiments/logs/
+stars_ckpt/
