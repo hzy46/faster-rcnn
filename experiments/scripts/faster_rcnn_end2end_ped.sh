@@ -15,59 +15,16 @@ export PYTHONUNBUFFERED="True"
 GPU_ID=$1
 NET=$2
 NET_lc=${NET,,}
-DATASET=$3
 
 array=( $@ )
 len=${#array[@]}
 EXTRA_ARGS=${array[@]:3:$len}
 EXTRA_ARGS_SLUG=${EXTRA_ARGS// /_}
 
-case $DATASET in
-  pascal_voc)
-    TRAIN_IMDB="voc_2007_trainval"
-    TEST_IMDB="voc_2007_test"
-    PT_DIR="pascal_voc"
-    ITERS=10
-    ;;
-  coco)
-    # This is a very long and slow training schedule
-    # You can probably use fewer iterations and reduce the
-    # time to the LR drop (set in the solver to 350,000 iterations).
-    TRAIN_IMDB="coco_2014_train"
-    TEST_IMDB="coco_2014_minival"
-    PT_DIR="coco"
-    ITERS=490000
-    ;;
-  sz)
-    TRAIN_IMDB="sz_train"
-    TEST_IMDB="sz_val"
-    ITERS=70000
-    ;;
-  sz_veh)
-    TRAIN_IMDB="sz_veh_train"
-    TEST_IMDB="sz_veh_val"
-    ITERS=70000
-    ;;
-  sz_ped)
-    TRAIN_IMDB="sz_ped_train"
-    TEST_IMDB="sz_ped_val"
-    ITERS=70000
-    ;;
-  sz_cyc)
-    TRAIN_IMDB="sz_cyc_train"
-    TEST_IMDB="sz_cyc_val"
-    ITERS=70000
-    ;;
-  sz_lights)
-    TRAIN_IMDB="sz_lights_train"
-    TEST_IMDB="sz_lights_val"
-    ITERS=70000
-    ;;
-  *)
-    echo "No dataset given"
-    exit
-    ;;
-esac
+TRAIN_IMDB="sz_ped_train"
+TEST_IMDB="sz_ped_val"
+ITERS=70000
+
 
 LOG="experiments/logs/faster_rcnn_end2end_${NET}_${EXTRA_ARGS_SLUG}.txt.`date +'%Y-%m-%d_%H-%M-%S'`"
 exec &> >(tee -a "$LOG")
@@ -77,7 +34,7 @@ time python ./tools/train_net.py --gpu ${GPU_ID} \
   --weights data/pretrain_model/VGG_imagenet.npy \
   --imdb ${TRAIN_IMDB} \
   --iters ${ITERS} \
-  --cfg experiments/cfgs/faster_rcnn_end2end.yml \
+  --cfg experiments/cfgs/faster_rcnn_end2end_ped.yml \
   --network VGGnet_train \
   ${EXTRA_ARGS}
 
@@ -88,6 +45,6 @@ set -x
 time python ./tools/test_net.py --gpu ${GPU_ID} \
   --weights ${NET_FINAL} \
   --imdb ${TEST_IMDB} \
-  --cfg experiments/cfgs/faster_rcnn_end2end.yml \
+  --cfg experiments/cfgs/faster_rcnn_end2end_ped.yml \
   --network VGGnet_test \
   ${EXTRA_ARGS}

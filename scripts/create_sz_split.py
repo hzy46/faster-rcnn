@@ -13,12 +13,16 @@ def parse_args():
     parser.add_argument('-d', '--sz-dir', default='data/sz')
     parser.add_argument('-t', '--train-split', help="0~1", type=float, default=0.8)
     parser.add_argument('-p', '--prefix-name', help="prefix", default="")
-    parser.add_argument('-r', '--remove-duplicate', default=True, type=bool)
+    parser.add_argument('-r', '--remove-empty', default=True, type=bool)
     args = parser.parse_args()
     return args
 
 
 def main(args):
+    # if os.path.exists(os.path.join(args.sz_dir, 'val')) is False:
+    #     os.makedirs(os.path.join(args.sz_dir, 'val'))
+    #    val_dir = os.path.join(args.sz_dir, 'val')
+    #   origin_train_dir = os.path.join(args.sz_dir, 'training/training')
     all_pics = glob(os.path.join(args.sz_dir, "training/training/*.jpg"))
     all_index = [os.path.basename(filepath).split('.')[0] for filepath in all_pics]
     random.shuffle(all_index)
@@ -26,7 +30,7 @@ def main(args):
     train_index = all_index[0:train_number]
     val_index = all_index[train_number:len(all_index)]
     label_file = os.path.join(args.sz_dir, 'label.idl')
-    if args.remove_duplicate is False:
+    if args.remove_empty is False:
         with open(os.path.join(args.sz_dir, args.prefix_name + 'train.txt'), 'w') as f:
             for index in train_index:
                 f.write(index)
@@ -37,7 +41,10 @@ def main(args):
             image_dict = {}  # index -> number
             for line in f:
                 j = json.loads(line)
-                key = j.keys()[0]
+                key = None
+                for x in j:
+                    key = x
+                    break
                 image_dict[key.split('.')[0]] = len(j[key])
         with open(os.path.join(args.sz_dir, args.prefix_name + 'train.txt'), 'w') as f:
             for index in train_index:

@@ -260,6 +260,7 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
+
 def unnormalize(sess, net):
     if cfg.TRAIN.BBOX_REG and 'bbox_pred' in net.layers:
         logging.warning('Apply unnormalization to bbox_pred.')
@@ -356,9 +357,9 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=300, thresh=0.05, 
                     all_boxes[j][i] = all_boxes[j][i][keep, :]
         _t['misc'].toc()
 
-        print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-              .format(i + 1, num_images, _t['im_detect'].average_time,
-                      _t['misc'].average_time)
+        logging.warning('im_detect: {:d}/{:d} {:.3f}s {:.3f}s'
+                        .format(i + 1, num_images, _t['im_detect'].average_time,
+                                _t['misc'].average_time))
 
     """写我自己的输出"""
     if imdb.name.startswith('sz'):

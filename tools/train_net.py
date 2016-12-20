@@ -11,7 +11,7 @@
 
 import _init_paths
 from fast_rcnn.train import get_training_roidb, train_net
-from fast_rcnn.config import cfg,cfg_from_file, cfg_from_list, get_output_dir
+from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from datasets.factory import get_imdb
 from networks.factory import get_network
 import argparse
@@ -20,6 +20,7 @@ import numpy as np
 import sys
 import pdb
 import logging
+
 
 def parse_args():
     """
@@ -57,7 +58,6 @@ def parse_args():
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
 
-
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -93,13 +93,16 @@ if __name__ == '__main__':
     device_name = '/gpu:{:d}'.format(args.gpu_id)
     print device_name
 
-    if args.imdb_name.startswith('sz'):
+    if args.imdb_name.startswith('sz_veh') or args.imdb_name.startswith('sz_cyc') or args.imdb_name.startswith('sz_ped') or args.imdb_name.startswith('sz_lights'):
+        n_classes = 2
+    elif args.imdb_name.startswith('sz'):
         n_classes = 5
     elif args.imdb_name.startswith('voc'):
         n_classes = 21
     else:
-        raise Exception('Give me the correct n_classes of %s' %(args.imdb_name))
+        raise Exception('Give me the correct n_classes of %s' % (args.imdb_name))
 
+    assert len(imdb._classes) == n_classes
 
     logging.info('----------------Use %d classes-----------------' % n_classes)
     network = get_network(args.network_name, n_classes)

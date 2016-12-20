@@ -17,16 +17,17 @@ import json
 import logging
 
 
-class sz(imdb):
+class sz_lights(imdb):
     def __init__(self, image_set, path=None):
-        imdb.__init__(self, 'sz_' + image_set)
+        imdb.__init__(self, 'sz_lights_' + image_set)
         self._image_set = image_set
         self._path = self._get_default_path() if path is None \
             else path
         self._img_path = os.path.join(self._path, 'all_pic/')
-        self._label_file = os.path.join(self._path, 'label.idl')
+        self._label_file = os.path.join(self._path, 'label_lights.idl')
+        """这里不管什么都当作vehicle吧。不然后面处理起来麻烦。"""
         self._classes = ('__background__',  # always index 0
-                         'vehicle', 'pedestrian', 'cyclist', 'traffic_lights')
+                         'vehicle')
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_ext = '.jpg'
         self._image_index = self._load_image_set_index()
@@ -49,11 +50,14 @@ class sz(imdb):
         """
         return os.path.join(cfg.DATA_DIR, 'sz')
 
+    def _get_image_set_file(self):
+        return os.path.join(self._path, self._image_set + '_lights.txt')
+
     def _load_image_set_index(self):
         """
         Load the indexes listed in this dataset's image set file.
         """
-        image_set_file = os.path.join(self._path, self._image_set + '.txt')
+        image_set_file = self._get_image_set_file()
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
@@ -143,7 +147,7 @@ class sz(imdb):
             salt = self._salt
         else:
             salt = ''
-        filename = 'sz_result_to_evaluation' + salt + self._image_set + '_{:s}.txt'
+        filename = 'sz_lights_result_to_evaluation' + salt + self._image_set + '_{:s}.txt'
         path = os.path.join(
             self._path,
             'results',
@@ -185,7 +189,7 @@ class sz(imdb):
 
     def _do_python_eval(self, output_dir='output'):
         anno_filename = self._label_file
-        image_set_file = os.path.join(self._path, self._image_set + '.txt')
+        image_set_file = self._get_image_set_file()
         aps = []
         use_07_metric = self.config['use_07_metric']
         print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
@@ -220,7 +224,7 @@ class sz(imdb):
         file_dict: 'cls' -> 'mscnn eval file'
         """
         anno_filename = self._label_file
-        image_set_file = os.path.join(self._path, self._image_set + '.txt')
+        image_set_file = self._get_image_set_file()
         aps = []
         use_07_metric = self.config['use_07_metric']
         print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')

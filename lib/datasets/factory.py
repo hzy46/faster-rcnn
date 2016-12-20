@@ -14,8 +14,11 @@ import datasets.imagenet3d
 import datasets.kitti
 import datasets.kitti_tracking
 import numpy as np
-from  datasets.sz import sz
-
+from datasets.sz import sz
+from datasets.sz_veh import sz_veh
+from datasets.sz_ped import sz_ped
+from datasets.sz_cyc import sz_cyc
+from datasets.sz_lights import sz_lights
 
 def _selective_search_IJCV_top_k(split, year, top_k):
     """Return an imdb that uses the top k proposals from the selective search
@@ -83,6 +86,25 @@ for split in ['train', 'val', 'test']:
     __sets[name] = (lambda split=split:
                     sz(split))
 
+for split in ['train', 'val', 'test']:
+    name = 'sz_veh_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    sz_veh(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'sz_ped_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    sz_ped(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'sz_cyc_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    sz_cyc(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'sz_lights_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    sz_lights(split))
 
 def get_imdb(name):
     """Get an imdb (image database) by name."""

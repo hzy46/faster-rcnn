@@ -8,3 +8,5 @@ train_data/
 output/
 experiments/logs/
 stars_ckpt/
+stars/
+tmp/

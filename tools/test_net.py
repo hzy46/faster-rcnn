@@ -46,7 +46,7 @@ def parse_args():
                         default='voc_2007_test', type=str)
     parser.add_argument('--network', dest='network_name',
                         help='name of the network',
-                        default=None, type=str)
+                        default='vgg_test', type=str)
     parser.add_argument('--vis', type=bool, default=False)
 
     if len(sys.argv) == 1:
@@ -80,12 +80,16 @@ if __name__ == '__main__':
     device_name = '/gpu:{:d}'.format(args.gpu_id)
     print device_name
 
-    if args.imdb_name.startswith('sz'):
+    if args.imdb_name.startswith('sz_veh') or args.imdb_name.startswith('sz_cyc') or args.imdb_name.startswith('sz_ped') or args.imdb_name.startswith('sz_lights'):
+        n_classes = 2
+    elif args.imdb_name.startswith('sz'):
         n_classes = 5
     elif args.imdb_name.startswith('voc'):
         n_classes = 21
     else:
         raise Exception('Give me the correct n_classes of %s' % (args.imdb_name))
+
+    assert len(imdb._classes) == n_classes
 
     network = get_network(args.network_name, n_classes)
     print 'Use network `{:s}` in training'.format(args.network_name)
