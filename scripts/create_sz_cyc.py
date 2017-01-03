@@ -18,6 +18,7 @@ def parse_args():
 
 
 def main(args):
+    input()
     all_pics = glob(os.path.join(args.sz_dir, "training/training/*.jpg"))
     all_index = []
     label_file = os.path.join(args.sz_dir, 'label.idl')

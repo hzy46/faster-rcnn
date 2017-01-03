@@ -45,6 +45,9 @@ __C.IS_MULTISCALE = False
 
 __C.TRAIN.LR_DECAY_RATE = 0.5
 
+__C.TRAIN.CLEAR_GLOBAL_STEP = False
+__C.TRAIN.SAVE_AT = []
+
 # Scales to compute real features
 #__C.TRAIN.SCALES_BASE = (0.25, 0.5, 1.0, 2.0, 3.0)
 #__C.TRAIN.SCALES_BASE = (1.0,)
@@ -150,6 +153,8 @@ __C.TRAIN.RPN_BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # Set to -1.0 to use uniform example weighting
 __C.TRAIN.RPN_POSITIVE_WEIGHT = -1.0
 
+__C.TRAIN.RPN_RATIOS = [0.5, 1, 2]
+__C.TRAIN.RPN_ANCHOR_SCALES = [8, 16, 32]
 
 #
 # Testing options

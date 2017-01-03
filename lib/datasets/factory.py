@@ -20,6 +20,11 @@ from datasets.sz_ped import sz_ped
 from datasets.sz_cyc import sz_cyc
 from datasets.sz_lights import sz_lights
 
+from datasets.ksz_veh import ksz_veh
+from datasets.ksz_ped import ksz_ped
+from datasets.ksz_cyc import ksz_cyc
+
+
 def _selective_search_IJCV_top_k(split, year, top_k):
     """Return an imdb that uses the top k proposals from the selective search
     IJCV code.
@@ -105,6 +110,22 @@ for split in ['train', 'val', 'test']:
     name = 'sz_lights_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz_lights(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'ksz_veh_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    ksz_veh(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'ksz_ped_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    ksz_ped(split))
+
+for split in ['train', 'val', 'test']:
+    name = 'ksz_cyc_{}'.format(split)
+    __sets[name] = (lambda split=split:
+                    ksz_cyc(split))
+
 
 def get_imdb(name):
     """Get an imdb (image database) by name."""

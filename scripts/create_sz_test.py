@@ -13,6 +13,7 @@ def parse_args():
 
 
 def main(args):
+    input()
     all_pics = glob(os.path.join(args.sz_dir, "testing/testing/*.jpg"))
     all_index = [os.path.basename(filepath).split('.')[0] for filepath in all_pics]
     with open(os.path.join(args.sz_dir, 'test.txt'), 'w') as f:

@@ -95,6 +95,8 @@ if __name__ == '__main__':
 
     if args.imdb_name.startswith('sz_veh') or args.imdb_name.startswith('sz_cyc') or args.imdb_name.startswith('sz_ped') or args.imdb_name.startswith('sz_lights'):
         n_classes = 2
+    elif args.imdb_name.startswith('ksz_veh') or args.imdb_name.startswith('ksz_cyc') or args.imdb_name.startswith('ksz_ped') or args.imdb_name.startswith('ksz_lights'):
+        n_classes = 2
     elif args.imdb_name.startswith('sz'):
         n_classes = 5
     elif args.imdb_name.startswith('voc'):

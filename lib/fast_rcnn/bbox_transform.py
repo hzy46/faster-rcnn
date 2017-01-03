@@ -28,6 +28,9 @@ def bbox_transform(ex_rois, gt_rois):
     return targets
 
 def bbox_transform_inv(boxes, deltas):
+    # print("----------------bbox bbox_transform!!!")
+    # print boxes.shape
+    # print deltas.shape
     if boxes.shape[0] == 0:
         return np.zeros((0, deltas.shape[1]), dtype=deltas.dtype)
 

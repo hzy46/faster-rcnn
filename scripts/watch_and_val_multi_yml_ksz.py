@@ -41,7 +41,7 @@ def add_report(ckpt):
     """
     iter_number = int(ckpt.split('.')[-2].split('_')[-1])
     model_name = ckpt.split('/')[-2]
-    model_class = model_name.replace('sz_', '').replace('_train', '')
+    model_class = model_name.replace('ksz_', '').replace('_train', '')
     save_file_name = model_name + '.txt'
     save_file_name = os.path.join(args.ckpt_dir, save_file_name)
     if os.path.exists(save_file_name) is False:
@@ -49,7 +49,7 @@ def add_report(ckpt):
             pass
     """replace"""
     imdb_val = model_name.replace('train', 'val')
-    command = './tools/test_net.py --gpu 0  --cfg experiments/cfgs/faster_rcnn_end2end_%s.yml '\
+    command = './tools/test_net.py --gpu 0  --cfg experiments/cfgs/faster_rcnn_end2end_ksz%s.yml '\
         '--network VGGnet_test --imdb %s --weights %s' % (model_class, imdb_val, ckpt)
     print(iter_number, model_name, command)
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
@@ -100,8 +100,8 @@ def main(args):
         do_list.sort(cmp=ckpt_cmp, reverse=True)
         for ckpt in do_list:
             try:
-	    	add_report(ckpt)
-            	time.sleep(5)
+                add_report(ckpt)
+                time.sleep(5)
             except Exception:
                 traceback.print_exc()
         ckpt_dict = new_ckpt_dict

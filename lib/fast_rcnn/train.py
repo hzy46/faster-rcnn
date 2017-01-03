@@ -1,4 +1,4 @@
-#coding:utf8
+# coding:utf8
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -18,6 +18,7 @@ import os
 import tensorflow as tf
 import sys
 import logging
+
 
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
@@ -45,7 +46,6 @@ class SolverWrapper(object):
         # For checkpoint
         self.saver = tf.train.Saver(max_to_keep=100)
 
-
     def snapshot(self, sess, iter):
         """Take a snapshot of the network after unnormalizing the learned
         bounding-box regression weights. This enables easy use at test-time.
@@ -61,7 +61,6 @@ class SolverWrapper(object):
 
         self.saver.save(sess, filename)
         print 'Wrote snapshot to: {:s}'.format(filename)
-
 
     def train_model(self, sess, max_iters):
         """Network training loop."""
@@ -103,6 +102,11 @@ class SolverWrapper(object):
 
         loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
 
+        # summary
+        tf.scalar_summary('loss', loss)
+        summary = tf.merge_all_summaries()
+        writer = tf.train.SummaryWriter(self.output_dir)
+
         # optimizer
         lr = tf.train.exponential_decay(cfg.TRAIN.LEARNING_RATE, self.global_step,
                                         cfg.TRAIN.STEPSIZE, cfg.TRAIN.LR_DECAY_RATE, staircase=True)
@@ -126,6 +130,12 @@ class SolverWrapper(object):
         elif self.checkpoint is not None:
             print('Loading checkpoint from: ' + self.checkpoint)
             self.saver.restore(sess, self.checkpoint)
+
+        if cfg.TRAIN.CLEAR_GLOBAL_STEP:
+            print('------------------------------------------------------')
+            print('WARNING: WILL SET global_step = 0')
+            print('------------------------------------------------------')
+            sess.run(self.global_step.assign(0))
 
         start_global_step = int(sess.run(self.global_step))
         last_snapshot_iter = -1
@@ -151,6 +161,15 @@ class SolverWrapper(object):
             if (iter + 1) % cfg.TRAIN.SNAPSHOT_ITERS == 0:
                 last_snapshot_iter = iter
                 self.snapshot(sess, iter)
+
+            if (iter + 1)  in cfg.TRAIN.SAVE_AT:
+                last_snapshot_iter = iter
+                self.snapshot(sess, iter)
+
+            if (iter + 1) % 25 == 0:
+                summary_str = sess.run(summary, feed_dict=feed_dict)
+                # summary_str = str(rpn_loss_cls_value + rpn_loss_box_value + loss_cls_value + loss_box_value)
+                writer.add_summary(summary_str, iter)
 
         if last_snapshot_iter != iter:
             self.snapshot(sess, iter)

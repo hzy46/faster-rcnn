@@ -1,12 +1,10 @@
 import tensorflow as tf
 from networks.network import Network
-
+from fast_rcnn.config import cfg
 
 # define
 
 _feat_stride = [16, ]
-anchor_scales = [8, 16, 32]
-
 
 class VGGnet_train(Network):
     def __init__(self, n_classes, trainable=True):
@@ -42,15 +40,15 @@ class VGGnet_train(Network):
         #========= RPN ============
         (self.feed('conv5_3')
              .conv(3, 3, 512, 1, 1, name='rpn_conv/3x3')
-             .conv(1, 1, len(anchor_scales) * 3 * 2, 1, 1, padding='VALID', relu=False, name='rpn_cls_score'))
+             .conv(1, 1, len(cfg.TRAIN.RPN_ANCHOR_SCALES) * (len(cfg.TRAIN.RPN_RATIOS)) * 2, 1, 1, padding='VALID', relu=False, name='rpn_cls_score'))
 
         (self.feed('rpn_cls_score', 'gt_boxes', 'im_info', 'data')
-             .anchor_target_layer(_feat_stride, anchor_scales, name='rpn-data'))
+             .anchor_target_layer(_feat_stride, cfg.TRAIN.RPN_ANCHOR_SCALES, name='rpn-data'))
 
         # Loss of rpn_cls & rpn_boxes
 
         (self.feed('rpn_conv/3x3')
-             .conv(1, 1, len(anchor_scales) * 3 * 4, 1, 1, padding='VALID', relu=False, name='rpn_bbox_pred'))
+             .conv(1, 1, len(cfg.TRAIN.RPN_ANCHOR_SCALES) * (len(cfg.TRAIN.RPN_RATIOS)) * 4, 1, 1, padding='VALID', relu=False, name='rpn_bbox_pred'))
 
         #========= RoI Proposal ============
         (self.feed('rpn_cls_score')
@@ -58,10 +56,10 @@ class VGGnet_train(Network):
              .softmax(name='rpn_cls_prob'))
 
         (self.feed('rpn_cls_prob')
-             .reshape_layer(len(anchor_scales) * 3 * 2, name='rpn_cls_prob_reshape'))
+             .reshape_layer(len(cfg.TRAIN.RPN_ANCHOR_SCALES) * (len(cfg.TRAIN.RPN_RATIOS)) * 2, name='rpn_cls_prob_reshape'))
 
         (self.feed('rpn_cls_prob_reshape', 'rpn_bbox_pred', 'im_info')
-             .proposal_layer(_feat_stride, anchor_scales, 'TRAIN', name='rpn_rois'))
+             .proposal_layer(_feat_stride, cfg.TRAIN.RPN_ANCHOR_SCALES, 'TRAIN', name='rpn_rois'))
 
         (self.feed('rpn_rois', 'gt_boxes')
              .proposal_target_layer(self.n_classes, name='roi-data'))

@@ -18,6 +18,7 @@ def parse_args():
 
 
 def main(args):
+    input()
     val_dir = os.path.join(args.sz_dir, 'val')
     train_dir = os.path.join(args.sz_dir, 'train')
     if os.path.exists(os.path.join(val_dir)) is False:
