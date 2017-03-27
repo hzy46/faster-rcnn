@@ -1,0 +1,5 @@
+python tools/test_net.py --weights output/faster_rcnn_end2end/sz_veh_trainval/VGGnet_fast_rcnn_iter_62500.ckpt --gpu 0 --network VGGnet_test --imdb sz_veh_test --cfg experiments/cfgs/faster_rcnn_end2end_veh.yml
+python tools/test_net.py --weights output/faster_rcnn_end2end/sz_ped_trainval/VGGnet_fast_rcnn_iter_21875.ckpt --gpu 0 --network VGGnet_test --imdb sz_ped_test --cfg experiments/cfgs/faster_rcnn_end2end_ped.yml
+python tools/test_net.py --weights output/faster_rcnn_end2end/sz_cyc_trainval/VGGnet_fast_rcnn_iter_15000.ckpt --gpu 0 --network VGGnet_test --imdb sz_cyc_test --cfg experiments/cfgs/faster_rcnn_end2end_cyc.yml
+python tools/test_net.py --weights output/faster_rcnn_end2end/sz_lights_trainval/VGGnet_fast_rcnn_iter_12500.ckpt --gpu 0 --network VGGnet_test --imdb sz_lights_test --cfg experiments/cfgs/faster_rcnn_end2end_lights.yml
+python scripts/combine_results.py

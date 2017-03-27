@@ -162,6 +162,10 @@ __C.TRAIN.RPN_ANCHOR_SCALES = [8, 16, 32]
 
 __C.TEST = edict()
 
+"""NEW"""
+__C.TEST.POST_PROCESS_THRESH = 0.05
+__C.TEST.CAL_FLIP = False
+
 # Scales to use during testing (can list multiple scales)
 # Each scale is the pixel size of an image's shortest side
 __C.TEST.SCALES = (600,)

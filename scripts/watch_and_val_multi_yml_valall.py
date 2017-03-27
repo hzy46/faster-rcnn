@@ -5,8 +5,9 @@ from glob import glob
 import os
 import subprocess
 import time
-import copy
+import traceback
 import re
+import copy
 
 def glob_all(dir_path):
     ckpt_list = []
@@ -31,6 +32,7 @@ def parse_args():
     parser.add_argument('-d', '--ckpt-dir', default='output/faster_rcnn_end2end/')
     """加入事先执行的，这个是关键词搜索，有这个关键词的就去执行"""
     parser.add_argument('-e', '--eval-old', default=None, help='example: sz_lights_train,sz_cyc_train')
+    parser.add_argument('-w', '--wait', default="TRUE", help="whether to wait for new ckpt after finishing eval-old")
     args = parser.parse_args()
     return args
 
@@ -42,15 +44,16 @@ def add_report(ckpt):
     """
     iter_number = int(ckpt.split('.')[-2].split('_')[-1])
     model_name = ckpt.split('/')[-2]
+    model_class = model_name.replace('sz_', '').replace('_trainval', '').replace('_train', '')
     save_file_name = model_name + '.txt'
     save_file_name = os.path.join(args.ckpt_dir, save_file_name)
     if os.path.exists(save_file_name) is False:
         with open(save_file_name, 'w'):
             pass
     """replace"""
-    imdb_val = model_name.replace('train', 'val')
-    command = './tools/test_net.py --gpu 0  --cfg experiments/cfgs/faster_rcnn_end2end.yml '\
-        '--network VGGnet_test --imdb %s --weights %s' % (imdb_val, ckpt)
+    imdb_val = model_name.replace('trainval', 'valall').replace('train', 'valall')
+    command = './tools/test_net.py --gpu 0  --cfg experiments/cfgs/faster_rcnn_end2end_%s.yml '\
+        '--network VGGnet_test --imdb %s --weights %s' % (model_class, imdb_val, ckpt)
     print(iter_number, model_name, command)
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
     out, err = p.communicate()
@@ -59,6 +62,17 @@ def add_report(ckpt):
     with open(save_file_name, 'a') as f:
         f.write('%s %s iter: %d AP: %f\n' % (time.strftime('%Y-%m-%d %H:%M'), model_name, iter_number, AP))
 
+
+
+def ckpt_cmp(ckpt1, ckpt2):
+    iter_number1 = int(ckpt1.split('.')[-2].split('_')[-1])
+    iter_number2 = int(ckpt2.split('.')[-2].split('_')[-1])
+    if iter_number1 < iter_number2:
+        return 1
+    elif iter_number1 > iter_number2:
+        return -1
+    else:
+        return 0
 
 def get_list_to_eval(eval_old, ckpt_dict):
     """
@@ -90,18 +104,37 @@ def get_list_to_eval(eval_old, ckpt_dict):
 def main(args):
     ckpt_dict = glob_all_dict(args.ckpt_dir)
     if args.eval_old:
-        to_eval = get_list_to_eval(args.eval_old, ckpt_dict)
-        for ckpt in to_eval:
-            add_report(ckpt)
+        do_list = get_list_to_eval(args.eval_old, ckpt_dict)
+        do_list.sort(cmp=ckpt_cmp, reverse=True)
+        for ckpt in do_list:
+            print("Will evaluate: %s" % ckpt)
+        for ckpt in do_list:
+            try:
+                add_report(ckpt)
+            except Exception:
+                traceback.print_exc()
+    if args.wait.upper().startswith('TRUE'):
+        args.wait = True
+    else:
+        args.wait = False
+    if args.wait is False:
+        print("Done.")
+        return
     print('Now watching.....')
     while True:
         time.sleep(30)
         new_ckpt_dict = glob_all_dict(args.ckpt_dir)
+        do_list = []
         for ckpt in new_ckpt_dict:
             if ckpt not in ckpt_dict:
-                print('*************************SUNNY:)*******************************')
+                do_list.append(ckpt)
+        do_list.sort(cmp=ckpt_cmp, reverse=True)
+        for ckpt in do_list:
+            try:
                 add_report(ckpt)
                 time.sleep(5)
+            except Exception:
+                traceback.print_exc()
         ckpt_dict = new_ckpt_dict
     # add_report('output/faster_rcnn_end2end/sz_cyc_train/VGGnet_fast_rcnn_iter_5000.ckpt')
 

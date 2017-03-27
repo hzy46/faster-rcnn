@@ -6,6 +6,8 @@ import os
 import subprocess
 import time
 import traceback
+import re
+import copy
 
 def glob_all(dir_path):
     ckpt_list = []
@@ -30,6 +32,7 @@ def parse_args():
     parser.add_argument('-d', '--ckpt-dir', default='output/faster_rcnn_end2end/')
     """加入事先执行的，这个是关键词搜索，有这个关键词的就去执行"""
     parser.add_argument('-e', '--eval-old', default=None, help='example: sz_lights_train,sz_cyc_train')
+    parser.add_argument('-w', '--wait', default="TRUE", help="whether to wait for new ckpt after finishing eval-old")
     args = parser.parse_args()
     return args
 
@@ -71,24 +74,51 @@ def ckpt_cmp(ckpt1, ckpt2):
     else:
         return 0
 
+
+def get_list_to_eval(eval_old, ckpt_dict):
+    """
+    eval_old: lights:1000,2000,3000;veh:20000,30000
+                   also support regex: lights:.*;veh:20000,30000
+    ckpt_dict: {"path_to_ckpt": True}
+    """
+    to_eval = []
+    ckpt_dict_temp = copy.copy(ckpt_dict)
+    eval_old = eval_old.split(';')
+    for item in eval_old:
+        item = item.strip()
+        if item == "":
+            continue
+        main_keyword = item.split(':')[0].strip()
+        main_keyword_pattern = re.compile(main_keyword)
+        sub_keyword_list = item.split(':')[1].strip().split(',')
+        for one_word in sub_keyword_list:
+            one_word = one_word.strip()
+            one_word_pattern = re.compile(one_word)
+            for ckpt in ckpt_dict_temp:
+                if ckpt_dict_temp[ckpt] is True and main_keyword_pattern.search(ckpt) and one_word_pattern.search(ckpt):
+                    to_eval.append(ckpt)
+                    ckpt_dict_temp[ckpt] = False
+    return to_eval
+
 def main(args):
     ckpt_dict = glob_all_dict(args.ckpt_dir)
     if args.eval_old:
-        eval_list = args.eval_old.split(',')
-        for keyword in eval_list:
-            keyword = keyword.strip()
-            if keyword:
-                do_list = []
-                for ckpt in ckpt_dict:
-                    if ckpt.find(keyword) != -1:
-                        do_list.append(ckpt)
-                print(do_list)
-                do_list.sort(cmp=ckpt_cmp, reverse=True)
-                for ckpt in do_list:
-                    try:
-                        add_report(ckpt)
-                    except Exception:
-                        traceback.print_exc()
+        do_list = get_list_to_eval(args.eval_old, ckpt_dict)
+        do_list.sort(cmp=ckpt_cmp, reverse=True)
+        for ckpt in do_list:
+            print("Will evaluate: %s" % ckpt)
+        for ckpt in do_list:
+            try:
+                add_report(ckpt)
+            except Exception:
+                traceback.print_exc()
+    if args.wait.upper().startswith('TRUE'):
+        args.wait = True
+    else:
+        args.wait = False
+    if args.wait is False:
+        print("Done.")
+        return
     print('Now watching.....')
     while True:
         time.sleep(30)

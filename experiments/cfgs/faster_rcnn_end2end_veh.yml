@@ -7,12 +7,13 @@ TRAIN:
   RPN_BATCHSIZE: 256
   PROPOSAL_METHOD: gt
   BG_THRESH_LO: 0.0
-  SNAPSHOT_ITERS: 5000
+  SNAPSHOT_ITERS: 2500
   RPN_RATIOS: !!python/list [0.5, 1, 2]
   RPN_ANCHOR_SCALES: !!python/list [8, 16, 32]
   ######NEW####
   CLEAR_GLOBAL_STEP: True
-  # TEPSIZE: 20000
+  STEPSIZE: 12500
+  # SAVE_AT: !!python/list [62500]
 
   SCALES: !!python/tuple [1280]
   MAX_SIZE: 10000
@@ -22,3 +23,12 @@ TEST:
   RPN_MIN_SIZE: 8
   SCALES: !!python/tuple [1280]
   MAX_SIZE: 10000
+
+  CAL_FLIP: True
+
+  POST_PROCESS_THRESH: 0.2
+  # # NMS: 0.458 # withot flip
+  NMS: 0.472 #with flip
+  # # NMS: 0.4 # ensemble 55000+50000
+
+

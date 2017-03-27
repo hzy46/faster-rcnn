@@ -178,7 +178,7 @@ class sz_cyc(imdb):
 
     def evaluate_detections(self, all_boxes, output_dir):
         self._write_sz_results_file(all_boxes)
-        self._do_python_eval(output_dir)
+        result = self._do_python_eval(output_dir)
         if self.config['cleanup']:
             logging.info('cleanup the result file........')
             for cls in self._classes:
@@ -186,6 +186,7 @@ class sz_cyc(imdb):
                     continue
                 filename = self._get_sz_results_file_template().format(cls)
                 os.remove(filename)
+        return result
 
     def _do_python_eval(self, output_dir='output'):
         anno_filename = self._label_file
@@ -218,6 +219,7 @@ class sz_cyc(imdb):
         # for ap in aps:
         #     print('{:.3f}'.format(ap))
         # print('{:.3f}'.format(np.mean(aps)))
+        return np.mean(aps)
 
     def _do_mscnn_eval(self, file_dict):
         """

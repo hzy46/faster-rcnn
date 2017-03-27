@@ -9,11 +9,11 @@ TRAIN:
   BG_THRESH_LO: 0.0
   SNAPSHOT_ITERS: 1000
   RPN_RATIOS: !!python/list [0.5, 1, 2]
-  RPN_ANCHOR_SCALES: !!python/list [4, 8, 16]
+  RPN_ANCHOR_SCALES: !!python/list [8, 16, 32]
   ######NEW####
   # CLEAR_GLOBAL_STEP: True
   # TEPSIZE: 20000
-  SAVE_AT: !!python/list [10]
+  SAVE_AT: !!python/list [12500]
 
   SCALES: !!python/tuple [1280]
   MAX_SIZE: 10000
@@ -23,3 +23,9 @@ TEST:
   RPN_MIN_SIZE: 3
   SCALES: !!python/tuple [1280]
   MAX_SIZE: 10000
+  
+  CAL_FLIP: True
+
+  POST_PROCESS_THRESH: 0.3
+  # NMS: ??? # without flip
+  NMS: 0.39 #with flip thresh=0.05

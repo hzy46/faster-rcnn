@@ -86,42 +86,42 @@ for split in ['71', '370']:
                     datasets.nthu(split))
 
 # shen zhou
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval']:
     name = 'sz_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval', 'valall']:
     name = 'sz_veh_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz_veh(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval', 'valall']:
     name = 'sz_ped_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz_ped(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval', 'valall']:
     name = 'sz_cyc_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz_cyc(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval', 'valall']:
     name = 'sz_lights_{}'.format(split)
     __sets[name] = (lambda split=split:
                     sz_lights(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval']:
     name = 'ksz_veh_{}'.format(split)
     __sets[name] = (lambda split=split:
                     ksz_veh(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval']:
     name = 'ksz_ped_{}'.format(split)
     __sets[name] = (lambda split=split:
                     ksz_ped(split))
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'trainval']:
     name = 'ksz_cyc_{}'.format(split)
     __sets[name] = (lambda split=split:
                     ksz_cyc(split))

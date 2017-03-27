@@ -174,7 +174,7 @@ class sz(imdb):
 
     def evaluate_detections(self, all_boxes, output_dir):
         self._write_sz_results_file(all_boxes)
-        self._do_python_eval(output_dir)
+        result = self._do_python_eval(output_dir)
         if self.config['cleanup']:
             logging.info('cleanup the result file........')
             for cls in self._classes:
@@ -182,6 +182,7 @@ class sz(imdb):
                     continue
                 filename = self._get_sz_results_file_template().format(cls)
                 os.remove(filename)
+        return result
 
     def _do_python_eval(self, output_dir='output'):
         anno_filename = self._label_file
@@ -210,6 +211,7 @@ class sz(imdb):
         print('Mean AP = {:.4f}'.format(np.mean(aps)))
         print('Weighted AP = {:.4f}'.format(float(weighted_ap) / weighted_n))
         print('~~~~~~~~')
+        return np.mean(aps)
         # print('Results:')
         # for ap in aps:
         #     print('{:.3f}'.format(ap))
@@ -245,6 +247,7 @@ class sz(imdb):
         print('Mean AP = {:.4f}'.format(np.mean(aps)))
         print('Weighted AP = {:.4f}'.format(float(weighted_ap) / weighted_n))
         print('~~~~~~~~')
+        return np.mean(aps)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,2 @@
+python tools/test_net.py --weights output/faster_rcnn_end2end/sz_cyc_train/VGGnet_fast_rcnn_iter_12500.ckpt --gpu 0 --network VGGnet_test --imdb sz_cyc_val --cfg experiments/cfgs/faster_rcnn_end2end_cyc.yml
+

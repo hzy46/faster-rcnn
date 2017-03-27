@@ -286,9 +286,8 @@ def unnormalize(sess, net):
         sess.run(biases.assign(orig_1 * bbox_stds + bbox_means))
 
 
-def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, vis=False):
+def test_net(raw_rcnn_data_file, imdb, weights_filename, max_per_image=1200, thresh=0.05, vis=False):
     """Test a Fast R-CNN network on an image database."""
-    unnormalize(sess, net)
 
     """NEW: replace the thresh"""
     thresh = cfg.TEST.POST_PROCESS_THRESH
@@ -307,9 +306,10 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, 
     if not cfg.TEST.HAS_RPN:
         roidb = imdb.roidb
 
-    widths = imdb._get_widths()
+    with open(raw_rcnn_data_file, 'rb') as f:
+        raw_rcnn_data = cPickle.load(f)
 
-    raw_rcnn_data = {'scores': [], 'boxes': []}
+    # print(raw_rcnn_data)
 
     for i in xrange(num_images):
         # filter out any ground truth boxes
@@ -325,34 +325,8 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, 
 
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
-        scores, boxes = im_detect(sess, net, im, box_proposals)
-
-        # FLIP? max_per_image?
-        if cfg.TEST.CAL_FLIP:
-            logging.warning("Calculating flipped picture!")
-            flipped_im = cv2.imread(imdb.image_path_at(i))
-            flipped_im = np.fliplr(flipped_im)
-            scores_flipped, boxes_flipped = im_detect(sess, net, flipped_im, None)
-            # print('---------------------')
-            # print(imdb.image_path_at(i))
-            # print(boxes_flipped)
-            boxes_flipped_temp = boxes_flipped.copy()
-            for j in range(int(boxes_flipped.shape[1] / 4)):
-                boxes_flipped[:, j * 4] = widths[i] - boxes_flipped_temp[:, j * 4 + 2]
-                boxes_flipped[:, j * 4 + 2] = widths[i] - boxes_flipped_temp[:, j * 4]
-            # print(boxes_flipped)
-            # print(scores_flipped)
-            # print('--------------')
-            scores = np.concatenate((scores, scores_flipped))
-            boxes = np.concatenate((boxes, boxes_flipped))
-            # scores = scores_flipped
-            # boxes = boxes_flipped
-        else:
-            logging.warning("Didn't calculate flipped picture!")
-
-        raw_rcnn_data['scores'].append(scores)
-        raw_rcnn_data['boxes'].append(boxes)
-
+        scores = raw_rcnn_data['scores'][i]
+        boxes = raw_rcnn_data['boxes'][i]
         # print(scores)
         # print(scores.shape)
         # print(boxes)
@@ -378,7 +352,6 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, 
             if vis:
                 vis_detections(image, imdb.classes[j], cls_dets)
             all_boxes[j][i] = cls_dets
-            # print(cls_dets)
         if vis:
             plt.show()
         # Limit to max_per_image detections *over all classes*
@@ -398,7 +371,7 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, 
 
     """写我自己的输出"""
     if imdb.name.startswith('sz'):
-        my_result_file = os.path.join(output_dir, 'sz_result.json')
+        my_result_file = os.path.join(output_dir, 'sz_result_test_post_process.json')
         result_json = {}
         with open(my_result_file, 'w') as f:
             for cls, all_pic_result in enumerate(all_boxes):
@@ -417,16 +390,13 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=600, thresh=0.05, 
             f.write(json.dumps(result_json))
         print('Result has been written into: %s' % my_result_file)
 
-    det_file = os.path.join(output_dir, 'detections.pkl')
+    det_file = os.path.join(output_dir, 'detections_test_post_process.pkl')
     with open(det_file, 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
-    raw_rcnn_data_file = os.path.join(output_dir, 'raw_rcnn_data.pkl')
-    with open(raw_rcnn_data_file, 'wb') as f:
-        cPickle.dump(raw_rcnn_data, f, cPickle.HIGHEST_PROTOCOL)
-
     print 'Evaluating detections'
-    result = imdb.evaluate_detections(all_boxes, output_dir)
+    imdb.evaluate_detections(all_boxes, output_dir)
 
     logging.warning('Thresh is %f!' % float(thresh))
-    return result
+    logging.warning('Max box is %d' % max_per_image)
+    logging.warning('NMS is %f' % cfg.TEST.NMS)

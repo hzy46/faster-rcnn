@@ -1,0 +1,2 @@
+python tools/test_multi_ensemble.py --raw-rcnn-data output/faster_rcnn_end2end/sz_veh_val/VGGnet_fast_rcnn_iter_50000/raw_rcnn_data.pkl,output/faster_rcnn_end2end/sz_veh_val/VGGnet_fast_rcnn_iter_55000/raw_rcnn_data.pkl  --gpu 0 --network VGGnet_test --imdb sz_veh_val --cfg experiments/cfgs/faster_rcnn_end2end_veh.yml 
+
